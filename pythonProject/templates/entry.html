@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilgilendirme - Anamnez GPT</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='entry-styles.css') }}">
+</head>
+<body>
+
+    <!-- Yükleme Ekranı -->
+    <div id="preloader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Sayfa İçeriği -->
+    <div class="container">
+        <h1>Hoş Geldiniz!</h1>
+        <p>Başlamadan önce aşağıdaki bilgilendirme videosunu izleyin.</p>
+
+        <!-- Video Konteyneri -->
+        <div class="video-container">
+            <video id="video-player" autoplay playsinline muted>
+                <source src="{{ url_for('static', filename='BilgilendirmeVideosu.mp4') }}" type="video/mp4">
+                Tarayıcınız bu videoyu desteklemiyor.
+            </video>
+            <div id="play-button">▶</div>
+        </div>
+
+        <!-- Kullanıcı etkileşimi için buton -->
+        <button id="start-video-btn" class="btn">🎬 Videoyu Başlat</button>
+
+        <!-- Butonlar -->
+        <div class="buttons">
+            <button id="ready-btn" class="btn">✅ Hazırım, Devam</button>
+            <button id="not-ready-btn" class="btn btn-alt">❌ Kendimi Hazır Hissetmiyorum</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='entry-script.js') }}"></script>
+</body>
+</html>

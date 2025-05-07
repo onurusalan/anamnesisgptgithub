@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anamnez Rapor Yorumlatıcı</title>
+    <link rel="stylesheet" href="/static/analysisstyle.css">
+    <!-- Font Awesome'ı güncel CDN ile kullan -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body class="dark-mode">
+
+    <!-- Üst Menü -->
+    <div class="header">
+        <h2>📄 Anamnez Rapor Yorumlatıcı</h2>
+        <div class="menu-buttons">
+            <button onclick="window.location.href='/'">🏠 Ana Sayfa</button>
+            <button id="theme-toggle">🌙 Dark Mode</button>
+        </div>
+    </div>
+
+    <!-- Sohbet Alanı -->
+    <div id="chat-container">
+        <div id="chat-box"></div>
+    </div>
+
+    <!-- Mesaj Gönderme Alanı (Claude Stili) -->
+    <div class="chat-input-container">
+        <textarea id="user-input" placeholder="Buraya yaz..." autofocus></textarea>
+        <div class="button-group">
+            <button id="upload-btn" class="file-upload-btn">+</button>
+            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script src="/static/analysisscript.js"></script>
+
+</body>
+</html>

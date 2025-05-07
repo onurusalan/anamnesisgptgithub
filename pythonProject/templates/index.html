@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anamnez Sohbet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .user-message {
+            background-color: #2563eb;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        .bot-message {
+            background-color: #374151;
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        .dark-mode {
+            background-color: #1f2937 !important;
+            color: white !important;
+        }
+        .light-mode {
+            background-color: #f9fafb !important;
+            color: black !important;
+        }
+        .option-btn {
+            background-color: #4b5563;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .option-btn:hover {
+            background-color: #6b7280;
+        }
+        .scale-btn {
+            background-color: #4b5563;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .scale-btn:hover {
+            background-color: #6b7280;
+        }
+        .yesno-btn {
+            background-color: #4b5563;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            margin: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .yesno-btn:hover {
+            background-color: #6b7280;
+        }
+        .dsm-yesno {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .dsm-question {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col h-screen transition-colors duration-300" id="theme">
+
+    <!-- Üst Menü -->
+    <div class="w-full flex justify-between p-4 bg-gray-800 shadow-lg">
+        <h2 class="text-xl font-bold">Anamnez GPT</h2>
+        <div class="flex gap-2">
+            <button id="reset-chat" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-all">🗑️ Sohbeti Sıfırla</button>
+            <button id="download-pdf" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg transition-all">📄 PDF İndir</button>
+            <button id="theme-toggle" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg transition-all">🌙 Dark Mode</button>
+            <button onclick="window.location.href='/analysis'" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-lg transition-all">
+                🧠 Anamnez Yorumlatıcı
+            </button>
+        </div>
+    </div>
+
+    <!-- Sohbet Kutusu -->
+    <div id="chat-container" class="flex-1 flex flex-col items-center overflow-y-auto p-4">
+        <div id="chat-box" class="w-full max-w-2xl flex flex-col gap-2">
+        </div>
+    </div>
+
+    <!-- Mesaj Gönderme Alanı -->
+    <div class="p-4 w-full flex justify-center bg-gray-800 shadow-lg">
+        <div class="flex w-full max-w-2xl gap-2">
+            <input type="text" id="answer-input" class="flex-1 p-2 rounded-lg text-black focus:outline-none" placeholder="Cevabınızı yazın...">
+            <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all">Gönder</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const answerInput = document.getElementById("answer-input");
+        const sendBtn = document.getElementById("send-btn");
+        const themeToggle = document.getElementById("theme-toggle");
+        const resetChatBtn = document.getElementById("reset-chat");
+        const downloadPdfBtn = document.getElementById("download-pdf");
+        const theme = document.body;
+
+        // Sohbeti Yükle
+        function loadConversation() {
+            fetch("/get_conversation")
+                .then(response => response.json())
+                .then(data => {
+                    chatBox.innerHTML = "";
+                    data.forEach(item => {
+                        addMessage(item.question, "bot-message");
+                        addMessage(item.answer, "user-message");
+                    });
+                });
+        }
+
+        // Mesaj Ekle
+        function addMessage(text, className) {
+            let messageDiv = document.createElement("div");
+            messageDiv.className = `message ${className} fade-in`;
+            messageDiv.innerText = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Sonraki Soruyu Sor
+        function askNextQuestion() {
+            fetch("/get_question")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.question) {
+                        addMessage(data.question, "bot-message");
+                        if (data.type === "radio" || data.type === "checkbox") {
+                            renderOptions(data.options, data.type);
+                        } else if (data.type === "scale") {
+                            renderScale(data.options || [], data.min, data.max);
+                        } else if (data.type === "dsm-yesno") {
+                            renderDSMYesNo(data.options);
+                        }
+                    }
+                });
+        }
+
+        // Seçenekleri Göster (Radio veya Checkbox)
+        function renderOptions(options, type) {
+            const optionsDiv = document.createElement("div");
+            optionsDiv.className = "options";
+            options.forEach(option => {
+                const button = document.createElement("button");
+                button.innerText = option;
+                button.className = "option-btn";
+                button.addEventListener("click", () => {
+                    if (type === "checkbox") {
+                        // Checkbox için birden fazla seçenek seçilebilir
+                        const selectedOptions = Array.from(document.querySelectorAll(".option-btn.selected")).map(btn => btn.innerText);
+                        if (selectedOptions.includes(option)) {
+                            button.classList.remove("selected");
+                        } else {
+                            button.classList.add("selected");
+                        }
+                    } else {
+                        // Radio için tek seçenek seçilebilir
+                        answerInput.value = option;
+                        sendBtn.click();
+                    }
+                });
+                optionsDiv.appendChild(button);
+            });
+            chatBox.appendChild(optionsDiv);
+
+            if (type === "checkbox") {
+                const submitButton = document.createElement("button");
+                submitButton.innerText = "Gönder";
+                submitButton.className = "bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-all";
+                submitButton.addEventListener("click", () => {
+                    const selectedOptions = Array.from(document.querySelectorAll(".option-btn.selected")).map(btn => btn.innerText);
+                    answerInput.value = selectedOptions.join(", ");
+                    sendBtn.click();
+                });
+                optionsDiv.appendChild(submitButton);
+            }
+        }
+
+        // Ölçekli Soruları Göster
+        function renderScale(options, min, max) {
+            const scaleDiv = document.createElement("div");
+            scaleDiv.className = "scale";
+            options.forEach(option => {
+                const label = document.createElement("p");
+                label.innerText = option;
+                scaleDiv.appendChild(label);
+                for (let i = min; i <= max; i++) {
+                    const button = document.createElement("button");
+                    button.innerText = i;
+                    button.className = "scale-btn";
+                    button.addEventListener("click", () => {
+                        answerInput.value = `${option}: ${i}`;
+                        sendBtn.click();
+                    });
+                    scaleDiv.appendChild(button);
+                }
+            });
+            chatBox.appendChild(scaleDiv);
+        }
+
+        // DSM Evet/Hayır Sorularını Göster
+        function renderDSMYesNo(options) {
+            const dsmDiv = document.createElement("div");
+            dsmDiv.className = "dsm-yesno";
+            options.forEach(option => {
+                const questionDiv = document.createElement("div");
+                questionDiv.className = "dsm-question";
+                questionDiv.innerHTML = `<p>${option}</p>`;
+
+                // Evet ve Hayır butonları
+                const yesButton = document.createElement("button");
+                yesButton.innerText = "Evet";
+                yesButton.className = "yesno-btn";
+                yesButton.addEventListener("click", () => {
+                    answerInput.value = `${option}: Evet`;
+                    sendBtn.click();
+                });
+
+                const noButton = document.createElement("button");
+                noButton.innerText = "Hayır";
+                noButton.className = "yesno-btn";
+                noButton.addEventListener("click", () => {
+                    answerInput.value = `${option}: Hayır`;
+                    sendBtn.click();
+                });
+
+                questionDiv.appendChild(yesButton);
+                questionDiv.appendChild(noButton);
+                dsmDiv.appendChild(questionDiv);
+            });
+            chatBox.appendChild(dsmDiv);
+        }
+
+        // Mesaj Gönderme
+        sendBtn.addEventListener("click", () => {
+            let answer = answerInput.value.trim();
+            if (answer !== "") {
+                addMessage(answer, "user-message");
+                fetch("/submit_answer", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ answer: answer })
+                }).then(() => {
+                    answerInput.value = "";
+                    askNextQuestion();
+                });
+            }
+        });
+
+        // Enter Tuşu ile Gönderme
+        answerInput.addEventListener("keypress", function (event) {
+            if (event.key === "Enter") {
+                sendBtn.click();
+            }
+        });
+
+        // Sohbeti Sıfırla
+        resetChatBtn.addEventListener("click", function () {
+            fetch("/reset_chat", { method: "POST" }).then(() => location.reload());
+        });
+
+        // PDF İndir
+        downloadPdfBtn.addEventListener("click", function () {
+            fetch("/download_pdf", { method: "GET" })
+                .then(response => response.blob())
+                .then(blob => {
+                    const link = document.createElement("a");
+                    link.href = window.URL.createObjectURL(blob);
+                    link.download = "sohbet.pdf";
+                    link.click();
+                });
+        });
+
+        // Dark/Light Mode
+        themeToggle.addEventListener("click", function () {
+            if (theme.classList.contains("dark-mode")) {
+                theme.classList.remove("dark-mode");
+                theme.classList.add("light-mode");
+                themeToggle.textContent = "🌙 Dark Mode";
+            } else {
+                theme.classList.remove("light-mode");
+                theme.classList.add("dark-mode");
+                themeToggle.textContent = "☀️ Light Mode";
+            }
+        });
+
+        // Sayfa Yüklendiğinde
+        window.onload = function () {
+            loadConversation();
+            askNextQuestion();
+        };
+    </script>
+</body>
+</html>
